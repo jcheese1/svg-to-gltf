@@ -1,9 +1,20 @@
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, Extrude, Stage, Html } from "@react-three/drei";
+import {
+  OrbitControls,
+  Extrude,
+  Stage,
+  Html,
+  useProgress,
+} from "@react-three/drei";
 import * as THREE from "three";
 import { SVGLoader } from "three-stdlib";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
+
+function Loader() {
+  const { progress } = useProgress();
+  return <Html center>{progress} % loaded</Html>;
+}
 
 function Svg({ url }: { url: string }) {
   const { paths } = useLoader(SVGLoader, url);
@@ -24,8 +35,9 @@ function Svg({ url }: { url: string }) {
         p.toShapes(true).map((shape) => {
           return {
             shape,
-            color: p.color,
             fillOpacity: p.userData?.style.fillOpacity,
+            fill: p.userData?.style.fill,
+            stroke: p.userData?.style.stroke,
             id: p.userData?.node.id,
           };
         })
@@ -35,7 +47,7 @@ function Svg({ url }: { url: string }) {
 
   const extrudeSettings = useMemo(
     () => ({
-      depth: 5,
+      depth: 8,
       bevelThickness: 0,
       bevelSize: 0,
       bevelOffset: 0,
@@ -54,7 +66,7 @@ function Svg({ url }: { url: string }) {
         castShadow
       />
       <OrbitControls />
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loader />}>
         <Stage environment="sunset" preset="rembrandt" intensity={0.5}>
           <group ref={ref}>
             {shapes.map((shape, i) => (
@@ -62,13 +74,12 @@ function Svg({ url }: { url: string }) {
                 key={`${shape.id}${i}`}
                 args={[shape.shape, extrudeSettings]}
                 receiveShadow
-                castShadow={false}
               >
                 <meshStandardMaterial
-                  color={shape.color}
+                  color={new THREE.Color().setStyle(shape.fill)}
                   opacity={shape.fillOpacity}
                   depthWrite={false}
-                  transparent
+                  transparent={shape.fillOpacity < 1}
                 />
               </Extrude>
             ))}
@@ -144,7 +155,7 @@ const App = () => {
             zoom: 1,
           }}
           onCreated={({ gl }) => {
-            gl.setClearColor("#ffffff");
+            gl.setClearColor("#f8f9fd");
           }}
         >
           {file ? <Svg url={file as string} /> : null}
