@@ -86,7 +86,13 @@ function Svg({
             {shapes.map((shape, i) => (
               <Extrude
                 key={`${shape.id}${i}`}
-                args={[shape.shape, extrudeSettings]}
+                args={[
+                  shape.shape,
+                  {
+                    ...extrudeSettings,
+                    depth: extrudeSettings.depth + i * 0.05,
+                  },
+                ]}
                 receiveShadow
               >
                 <meshStandardMaterial
@@ -98,7 +104,7 @@ function Svg({
                           .convertSRGBToLinear()
                   }
                   opacity={shape.fillOpacity}
-                  depthWrite={false}
+                  depthWrite
                   transparent
                   side={THREE.DoubleSide}
                 />
