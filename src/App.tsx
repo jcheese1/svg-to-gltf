@@ -11,12 +11,24 @@ import * as THREE from "three";
 import { SVGLoader } from "three-stdlib";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 
+import { Leva, useControls } from "leva";
+
 function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress} % loaded</Html>;
 }
 
-function Svg({ url }: { url: string }) {
+function Svg({
+  url,
+  depth,
+  useCustomFillColor,
+  customFillColor,
+}: {
+  url: string;
+  depth: number;
+  useCustomFillColor: boolean;
+  customFillColor: string;
+}) {
   const { paths } = useLoader(SVGLoader, url, (e) => console.log(e));
   const ref = useRef() as React.MutableRefObject<THREE.Group>;
   const [loaded, setLoaded] = useState(false);
@@ -48,14 +60,14 @@ function Svg({ url }: { url: string }) {
 
   const extrudeSettings = useMemo(
     () => ({
-      depth: 20,
+      depth,
       bevelThickness: 0,
       bevelSize: 0,
       bevelOffset: 0,
       bevelSegments: 2,
       bevelEnabled: false,
     }),
-    []
+    [depth]
   );
 
   return (
@@ -78,9 +90,13 @@ function Svg({ url }: { url: string }) {
                 receiveShadow
               >
                 <meshStandardMaterial
-                  color={new THREE.Color()
-                    .setStyle(shape.fill)
-                    .convertSRGBToLinear()}
+                  color={
+                    useCustomFillColor
+                      ? new THREE.Color(customFillColor)
+                      : new THREE.Color()
+                          .setStyle(shape.fill)
+                          .convertSRGBToLinear()
+                  }
                   opacity={shape.fillOpacity}
                   depthWrite={false}
                   transparent
@@ -132,6 +148,16 @@ function Svg({ url }: { url: string }) {
 const App = () => {
   const [file, setFile] = useState<string | ArrayBuffer | null>(null);
 
+  const { backgroundColor, ...others } = useControls({
+    depth: 20,
+    backgroundColor: "#f8f9fd",
+    useCustomFillColor: false,
+    customFillColor: {
+      value: "#f8f9fd",
+      render: (get) => get("useCustomFillColor"),
+    },
+  });
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
 
@@ -147,6 +173,8 @@ const App = () => {
     }
   };
 
+  console.log(file);
+
   return (
     <div className="flex">
       <div className="basis-24">
@@ -159,11 +187,9 @@ const App = () => {
             far: 1000,
             zoom: 1,
           }}
-          onCreated={({ gl }) => {
-            gl.setClearColor("#f8f9fd");
-          }}
         >
-          {file ? <Svg url={file as string} /> : null}
+          <color attach="background" args={[backgroundColor]} />
+          {file ? <Svg url={file as string} {...others} /> : null}
         </Canvas>
       </div>
     </div>
