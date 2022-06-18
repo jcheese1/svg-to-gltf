@@ -17,7 +17,7 @@ function Loader() {
 }
 
 function Svg({ url }: { url: string }) {
-  const { paths } = useLoader(SVGLoader, url);
+  const { paths } = useLoader(SVGLoader, url, (e) => console.log(e));
   const ref = useRef() as React.MutableRefObject<THREE.Group>;
   const [loaded, setLoaded] = useState(false);
 
@@ -32,9 +32,10 @@ function Svg({ url }: { url: string }) {
   const shapes = useMemo(
     () =>
       paths.flatMap((p) =>
-        p.toShapes(true).map((shape) => {
+        SVGLoader.createShapes(p).map((shape) => {
           return {
             shape,
+            color: p.color,
             fillOpacity: p.userData?.style.fillOpacity,
             fill: p.userData?.style.fill,
             stroke: p.userData?.style.stroke,
@@ -47,11 +48,12 @@ function Svg({ url }: { url: string }) {
 
   const extrudeSettings = useMemo(
     () => ({
-      depth: 8,
+      depth: 20,
       bevelThickness: 0,
       bevelSize: 0,
       bevelOffset: 0,
       bevelSegments: 2,
+      bevelEnabled: false,
     }),
     []
   );
@@ -76,10 +78,13 @@ function Svg({ url }: { url: string }) {
                 receiveShadow
               >
                 <meshStandardMaterial
-                  color={new THREE.Color().setStyle(shape.fill)}
+                  color={new THREE.Color()
+                    .setStyle(shape.fill)
+                    .convertSRGBToLinear()}
                   opacity={shape.fillOpacity}
                   depthWrite={false}
-                  transparent={shape.fillOpacity < 1}
+                  transparent
+                  side={THREE.DoubleSide}
                 />
               </Extrude>
             ))}
