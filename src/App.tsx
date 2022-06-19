@@ -23,11 +23,13 @@ function Svg({
   depth,
   useCustomFillColor,
   customFillColor,
+  autoRotate,
 }: {
   url: string;
   depth: number;
   useCustomFillColor: boolean;
   customFillColor: string;
+  autoRotate: boolean;
 }) {
   const { paths } = useLoader(SVGLoader, url, (e) => console.log(e));
   const ref = useRef() as React.MutableRefObject<THREE.Group>;
@@ -79,7 +81,7 @@ function Svg({
         args={[0xffffff]}
         castShadow
       />
-      <OrbitControls />
+      <OrbitControls autoRotate={autoRotate} autoRotateSpeed={0.5} />
       <Suspense fallback={<Loader />}>
         <Stage environment="sunset" preset="rembrandt" intensity={0.5}>
           <group ref={ref}>
@@ -154,15 +156,25 @@ function Svg({
 const App = () => {
   const [file, setFile] = useState<string | ArrayBuffer | null>(null);
 
-  const { backgroundColor, ...others } = useControls({
-    depth: 20,
-    backgroundColor: "#f8f9fd",
-    useCustomFillColor: false,
-    customFillColor: {
-      value: "#f8f9fd",
-      render: (get) => get("useCustomFillColor"),
-    },
+  const { ...others } = useControls({
+    depth: 10,
+    autoRotate: false,
   });
+
+  const { backgroundColor, ...others2 } = useControls(
+    "Colors",
+    {
+      backgroundColor: "#f8f9fd",
+      useCustomFillColor: false,
+      customFillColor: {
+        value: "#f8f9fd",
+        render: (get) => get("useCustomFillColor"),
+      },
+    },
+    {
+      collapsed: true,
+    }
+  );
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -195,7 +207,7 @@ const App = () => {
           }}
         >
           <color attach="background" args={[backgroundColor]} />
-          {file ? <Svg url={file as string} {...others} /> : null}
+          {file ? <Svg url={file as string} {...others} {...others2} /> : null}
         </Canvas>
       </div>
     </div>
